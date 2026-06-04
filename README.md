@@ -1,6 +1,6 @@
 # Cross Examination
 
-An interactive R Shiny app for teaching genetic mapping. It lets students explore how three different approaches — multi-parent populations (MPP/BSA), biparental F2 crosses, and GWAS — detect the genetic variants that control a trait.
+An interactive R Shiny app for teaching genetic mapping. Students explore three approaches to detecting genetic variants: multi-parent populations (MPP/BSA), biparental F2 crosses, and GWAS.
 
 ---
 
@@ -25,28 +25,17 @@ shiny::runGitHub("Cross_Examination", "sruckman")
 Simulates a multi-parent population (MAGIC or hub-and-spoke design). Students choose the number of founders, generations of recombination, and pool size. The app selects the top-phenotype individuals as cases and random individuals as controls, then runs a bulk segregant analysis (BSA) scan using a G-test (1 replicate) or Cochran-Mantel-Haenszel test (multiple replicates). Plots show founder haplotype mosaics, cases vs. controls, the LOD scan, and per-founder allele frequency differences between pools.
 
 ### Biparental QTL
-Simulates a classic two-parent cross: P1 × P2 → F1 → F2. Each F2 chromosome is a mosaic of P1 (red) and P2 (blue) segments created by recombination. Students choose the number of F2 individuals and the QTL architecture, then scan using additive regression (F-test) at each of 202 positions across a 100 cM chromosome.
+Simulates a classic two-parent cross: P1 x P2 -> F1 -> F2. Each F2 chromosome is a mosaic of P1 (red) and P2 (blue) segments created by recombination. Students choose the number of F2 individuals and the QTL architecture, then scan using additive regression (F-test) at each of 202 positions across a 100 cM chromosome.
 
 ### GWAS
-Simulates a case-control GWAS in an outbred population using a MAGIC-style mosaic model with 12 founder haplotypes. Students control sample size (up to 100k) and average LD block size — larger blocks represent bottlenecked or domesticated species, smaller blocks represent diverse outbred populations with long recombination history. The app runs a chi-square association scan at 1000 SNPs (10 SNPs/cM) and displays a haplotype mosaic of cases vs. controls alongside a Manhattan plot.
+Simulates a case-control GWAS in an outbred population using a MAGIC-style mosaic model with 12 founder haplotypes. Students control sample size (up to 100k) and average LD block size. Larger blocks represent bottlenecked or domesticated species. Smaller blocks represent diverse outbred populations with long recombination history. The app runs a chi-square association scan at 1000 SNPs (10 SNPs/cM) and displays a haplotype mosaic of cases vs. controls alongside a Manhattan plot.
 
 ---
 
 ## Key features
 
-- **Teaching mode** — fixes QTL positions across runs so students can change one parameter at a time and compare results cleanly
-- **Save plot** — exports the current haplotype and scan plots as a PNG with all parameter settings in the caption
-- **LD block size control** — GWAS tab lets you vary block size to show how recombination history shapes the association signal
-- **Black background** — optimized for projector display
-- **Fixed Bonferroni thresholds** — LOD 3.6 for MPP and biparental (202 tests, α = 0.05), LOD 4.3 for GWAS (1000 tests, α = 0.05)
-
----
-
-## Deploy to shinyapps.io
-
-```r
-rsconnect::deployApp(
-  appDir  = "path/to/Genetics Primer",
-  appName = "cross_examination"
-)
-```
+- **Teaching mode**: fixes QTL positions across runs so students can change one parameter at a time and compare results cleanly
+- **Save plot**: exports the current haplotype and scan plots as a PNG with all parameter settings in the caption
+- **LD block size control**: GWAS tab lets you vary block size to show how recombination history shapes the association signal
+- **Black background**: optimized for projector display
+- **Fixed Bonferroni thresholds**: LOD 3.6 for MPP and biparental (202 tests, α = 0.05), LOD 4.3 for GWAS (1000 tests, α = 0.05)
