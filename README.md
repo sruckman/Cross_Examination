@@ -1,45 +1,52 @@
-# MPP Simulator
+# Cross Examination
 
-An interactive simulator for exploring multiparent population (MPP) design and QTL mapping using bulk segregant analysis (BSA).
-
-Built for teaching how crossing design, pool size, sequencing coverage, and genetic architecture affect your ability to detect QTL.
+An interactive R Shiny app for teaching genetic mapping. It lets students explore how three different approaches — multi-parent populations (MPP/BSA), biparental F2 crosses, and GWAS — detect the genetic variants that control a trait.
 
 ---
 
 ## Run it in your browser
 
-**https://sruckman.shinyapps.io/mpp_simulator/**
+**https://sruckman.shinyapps.io/cross_examination/**
 
 ---
 
 ## Run it locally in R
 
-If you have R installed, you can run it directly from GitHub:
-
 ```r
-# Install shiny if needed
-install.packages("shiny")
-
-# Run the app
-shiny::runGitHub("mpp-simulator", "sruckman")
+install.packages(c("shiny", "ggplot2", "gridExtra"))
+shiny::runGitHub("Cross_Examination", "sruckman")
 ```
 
 ---
 
-## What it simulates
+## The three tabs
 
-- **Founders** — inbred lines whose haplotypes are mixed into the population
-- **Crossing design** — fully intercrossed (all founders) or hub-and-spoke (one central founder)
-- **Recombination** — generations of crossover accumulation; more generations = smaller haplotype blocks
-- **Sequencing** — coverage and haplotype inference accuracy add realistic noise
-- **QTL architecture** — null, 1 major QTL, 2–3 moderate QTLs, or polygenic
-- **BSA pools** — cases (top N by phenotype) vs. controls (random N from unselected individuals)
-- **QTL scan** — chi-square test on 2N diploid allele counts at each of 101 positions
+### MPP / BSA
+Simulates a multi-parent population (MAGIC or hub-and-spoke design). Students choose the number of founders, generations of recombination, and pool size. The app selects the top-phenotype individuals as cases and random individuals as controls, then runs a bulk segregant analysis (BSA) scan using a G-test (1 replicate) or Cochran-Mantel-Haenszel test (multiple replicates). Plots show founder haplotype mosaics, cases vs. controls, the LOD scan, and per-founder allele frequency differences between pools.
 
-## What the plots show
+### Biparental QTL
+Simulates a classic two-parent cross: P1 × P2 → F1 → F2. Each F2 chromosome is a mosaic of P1 (red) and P2 (blue) segments created by recombination. Students choose the number of F2 individuals and the QTL architecture, then scan using additive regression (F-test) at each of 202 positions across a 100 cM chromosome.
 
-| Plot | What to look for |
-|------|-----------------|
-| Founder haplotypes | The pure building blocks before any recombination |
-| RIL mosaic | How founders are mixed after recombination |
-| Cases vs. controls | At a QTL peak, one founder color dominates in cases; controls look ran
+### GWAS
+Simulates a case-control GWAS in an outbred population using a MAGIC-style mosaic model with 12 founder haplotypes. Students control sample size (up to 100k) and average LD block size — larger blocks represent bottlenecked or domesticated species, smaller blocks represent diverse outbred populations with long recombination history. The app runs a chi-square association scan at 1000 SNPs (10 SNPs/cM) and displays a haplotype mosaic of cases vs. controls alongside a Manhattan plot.
+
+---
+
+## Key features
+
+- **Teaching mode** — fixes QTL positions across runs so students can change one parameter at a time and compare results cleanly
+- **Save plot** — exports the current haplotype and scan plots as a PNG with all parameter settings in the caption
+- **LD block size control** — GWAS tab lets you vary block size to show how recombination history shapes the association signal
+- **Black background** — optimized for projector display
+- **Fixed Bonferroni thresholds** — LOD 3.6 for MPP and biparental (202 tests, α = 0.05), LOD 4.3 for GWAS (1000 tests, α = 0.05)
+
+---
+
+## Deploy to shinyapps.io
+
+```r
+rsconnect::deployApp(
+  appDir  = "path/to/Genetics Primer",
+  appName = "cross_examination"
+)
+```
