@@ -19,10 +19,22 @@ shiny::runGitHub("Cross_Examination", "sruckman")
 
 ---
 
+## How to use the app
+
+**Teaching Mode** is a blue checkbox at the top of each tab's sidebar. When on, every simulation run produces identical results (fixed random seed and fixed QTL positions). Use this for lectures and guided exercises. Turn it off for student exploration and homework, where results change each run.
+
+**Running a simulation**: set parameters in the sidebar and click Simulate. GWAS with large sample sizes may take 10-30 seconds.
+
+**Saving plots**: click Save Plot after running. A PNG downloads with a timestamp in the filename. The caption at the bottom of the image shows all parameter settings. Save multiple runs to compare across conditions.
+
+**Significance thresholds**: a blue dashed line marks the Bonferroni threshold on every LOD plot. LOD 3.6 for MPP/BSA and Biparental QTL (202 tests, α = 0.05). LOD 4.3 for GWAS (1000 tests, α = 0.05). White vertical lines mark the true QTL position.
+
+---
+
 ## The three tabs
 
 ### MPP / BSA
-Simulates a multi-parent population (MAGIC or hub-and-spoke design). Students choose the number of founders, generations of recombination, and pool size. The app selects the top-phenotype individuals as cases and random individuals as controls, then runs a bulk segregant analysis (BSA) scan using a G-test (1 replicate) or Cochran-Mantel-Haenszel test (multiple replicates). Plots show founder haplotype mosaics, cases vs. controls, the LOD scan, and per-founder allele frequency differences between pools.
+Simulates a multi-parent population (fully intercrossed or hub-and-spoke design). Students choose the number of founders, generations of recombination, and pool size. The app selects the top-phenotype individuals as cases and random individuals as controls, then runs a bulk segregant analysis scan using a G-test (1 replicate) or Cochran-Mantel-Haenszel test (multiple replicates). Plots show founder haplotype mosaics, cases vs. controls, the LOD scan, and per-founder allele frequency differences between pools.
 
 ### Biparental QTL
 Simulates a classic two-parent cross: P1 x P2 -> F1 -> F2. Each F2 chromosome is a mosaic of P1 (red) and P2 (blue) segments created by recombination. Students choose the number of F2 individuals and the QTL architecture, then scan using additive regression (F-test) at each of 202 positions across a 100 cM chromosome.
