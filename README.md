@@ -34,7 +34,7 @@ Simulates a case-control GWAS in an outbred population using a MAGIC-style mosai
 
 ## Key features
 
-- **Teaching mode**: fixes QTL positions across runs so students can change one parameter at a time and compare results cleanly
+- **Teaching mode**: produces identical results every run (fixed seed + fixed QTL positions), so instructors can use consistent scenarios for lectures. Turn it off for student exploration and homework.
 - **Save plot**: exports the current haplotype and scan plots as a PNG with all parameter settings in the caption
 - **LD block size control**: GWAS tab lets you vary block size to show how recombination history shapes the association signal
 - **Black background**: optimized for projector display

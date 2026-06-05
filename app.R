@@ -965,6 +965,7 @@ server <- function(input, output, session) {
     hub       <- input$design == "hub"
     n_reps    <- input$n_reps
     teach     <- isTRUE(input$teaching_mode)
+    if (teach) set.seed(42L)
     qtl_cfg   <- get_qtl_config(input$genetic_model, input$n_founders,
                                 hub_design = hub, teaching = teach)
 
@@ -1118,6 +1119,7 @@ server <- function(input, output, session) {
 
   f2_results <- eventReactive(input$f2_simulate, {
     teach   <- isTRUE(input$f2_teaching)
+    if (teach) set.seed(42L)
     qtl_pos <- switch(input$f2_model,
       "null"      = integer(0),
       "1qtl"      = if (teach) TEACH_POS[["1qtl"]] else sample(10L:90L, 1L),
@@ -1205,6 +1207,7 @@ server <- function(input, output, session) {
       gwas_ef  <- 0.5
       n_ind    <- input$gwas_n_ind
       teach    <- isTRUE(input$gwas_teaching)
+      if (teach) set.seed(42L)
       block_cM <- input$gwas_block_cM
       n_cross  <- max(1L, round(100L / block_cM))
 
