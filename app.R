@@ -727,7 +727,7 @@ ui <- navbarPage(
       sliderInput("n_founders", "Founders",
                   min=2, max=30, value=8, step=2, width="100%"),
       sliderInput("n_gen", "Generations of recombination / selfing",
-                  min=5, max=50, value=10, step=1, width="100%"),
+                  min=1, max=50, value=10, step=1, width="100%"),
       conditionalPanel(
         condition = "input.design == 'hub'",
         p(tags$small(style="color:#FFCC80;",
@@ -899,7 +899,7 @@ ui <- navbarPage(
           "All SNPs within a block are co-inherited — a causal SNP pulls up every SNP in its block."
         )),
         sliderInput("gwas_n_ind", "Individuals",
-                    min=5000, max=100000, value=10000, step=5000, width="100%"),
+                    min=500, max=100000, value=10000, step=500, width="100%"),
         sliderInput("gwas_block_cM", "Avg. LD block size (cM)",
                     min=5, max=50, value=12, step=1, width="100%"),
         p(tags$small(
