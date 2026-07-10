@@ -1,0 +1,13 @@
+# Teaching materials — kept locally, not posted to GitHub
+teaching_materials/
+
+# Quarto build outputs
+.quarto/
+_extensions/
+
+# R deployment metadata
+rsconnect/
+
+# HTML files except the teaching demo
+*.html
+!teaching_demo.html

@@ -6,18 +6,11 @@ library(gridExtra)
 POS_SEQ <- seq(0, 100, length.out = 202L)
 N_POS   <- length(POS_SEQ)
 
-# Background colors for dark mode
-BG_PAGE       <- "#000000"
-BG_PANEL      <- "#141414"
-BG_PLOT       <- "#000000"
-BG_PLOT_LIGHT <- "#111111"
-COL_GRID      <- "#2a2a2a"
-
 # F2 colors (global so plot helpers can access them)
 F2_COLS <- c("1" = "#CC0000", "2" = "#1E90FF")
 F2_LBLS <- c("1" = "P1",     "2" = "P2")
 
-# Teaching-mode fixed QTL positions (same every run when teaching mode is on)
+# Teaching-mode fixed QTL positions
 TEACH_POS <- list(
   "1qtl"      = 50L,
   "2qtl"      = c(30L, 70L),
@@ -34,43 +27,242 @@ TEACH_SNP <- list(
 )
 
 # ============================================================
+# COLOR / THEME HELPERS
+# ============================================================
+
+get_colors <- function(light = FALSE) {
+  if (light) {
+    list(
+      BG_PAGE       = "#ffffff",
+      BG_PANEL      = "#f0f4f8",
+      BG_PLOT       = "#ffffff",
+      BG_PLOT_LIGHT = "#f5f7fa",
+      COL_GRID      = "#dddddd",
+      text          = "#222222",
+      strip_fill    = "#dce8f5",
+      strip_text    = "#222222",
+      lod_line      = "#1a3a6b",
+      lod_thresh    = "#2980b9",
+      grid_major    = "#cccccc",
+      qtl_line      = "#cc3300",
+      freq_zero     = "#888888",
+      caption       = "#555555",
+      hint          = "#1a5276"
+    )
+  } else {
+    list(
+      BG_PAGE       = "#000000",
+      BG_PANEL      = "#141414",
+      BG_PLOT       = "#000000",
+      BG_PLOT_LIGHT = "#111111",
+      COL_GRID      = "#2a2a2a",
+      text          = "#ffffff",
+      strip_fill    = "#111111",
+      strip_text    = "#ffffff",
+      lod_line      = "#D0E8FF",
+      lod_thresh    = "#64B5F6",
+      grid_major    = "#222222",
+      qtl_line      = "#ffffff",
+      freq_zero     = "#666666",
+      caption       = "#aaaaaa",
+      hint          = "#90CAF9"
+    )
+  }
+}
+
+make_app_css <- function() {
+  '
+    /* ===== ALWAYS (BOTH MODES) ===== */
+    body { padding-top: 60px !important; font-family: Arial, sans-serif; font-size: 15px; }
+
+    /* navbar: always dark regardless of mode */
+    .navbar-inverse,
+    .navbar-inverse.navbar-fixed-top {
+      background-color: #141414 !important;
+      border-color: #253050 !important;
+    }
+    /* inner containers inherit the dark background -- light-mode must not override these */
+    .navbar-inverse .container-fluid,
+    .navbar-inverse .navbar-header,
+    .navbar-inverse .navbar-collapse { background-color: transparent !important; }
+    .navbar-inverse .navbar-brand { color: #ffffff !important; font-size: 17px !important; }
+    .navbar-inverse .navbar-nav > li > a { color: #ffffff !important; font-size: 15px !important; }
+    .navbar-inverse .navbar-nav > .active > a,
+    .navbar-inverse .navbar-nav > .active > a:focus,
+    .navbar-inverse .navbar-nav > .active > a:hover {
+      background-color: #2E75B6 !important; color: #ffffff !important;
+    }
+    .navbar-inverse .navbar-nav > li > a:hover { background-color: #253050 !important; }
+
+    /* mode toggle -- always on dark navbar strip */
+    #mode-toggle label { color: #ffffff !important; font-size: 13px !important; font-weight: normal !important; }
+    #mode-toggle .checkbox { margin: 0 !important; }
+
+    /* slider (same in both modes) */
+    .irs--shiny .irs-bar   { background: #2E75B6; border-color: #2E75B6; height: 8px; }
+    .irs--shiny .irs-handle {
+      background: #4FC3F7 !important; border: 2px solid #ffffff !important;
+      width: 20px !important; height: 20px !important; top: 21px !important;
+    }
+    .irs--shiny .irs-from, .irs--shiny .irs-to, .irs--shiny .irs-single {
+      background: #2E75B6; color: #ffffff !important; font-size: 13px !important;
+    }
+    .irs--shiny .irs-grid-text { display: none !important; }
+    .irs--shiny .irs-grid-pol  { display: none !important; }
+
+    /* buttons */
+    #simulate, #f2_simulate, #gwas_simulate {
+      background: #2E75B6 !important; color: #fff !important; border: none !important;
+    }
+    #simulate:hover, #f2_simulate:hover, #gwas_simulate:hover { background: #4194D4 !important; }
+    #simulate:active, #f2_simulate:active, #gwas_simulate:active { background: #1a5a96 !important; }
+
+    /* download button */
+    .shiny-download-link {
+      display: block !important; width: 100% !important; text-align: center !important;
+      background: #1a5a96 !important; color: #fff !important; border: none !important;
+      padding: 8px !important; border-radius: 4px !important; font-size: 14px !important;
+      margin-top: 6px !important; text-decoration: none !important; box-sizing: border-box !important;
+    }
+    .shiny-download-link:hover { background: #2E75B6 !important; color: #fff !important; text-decoration: none !important; }
+
+    /* teach-box frame */
+    .teach-box {
+      background: rgba(46, 117, 182, 0.12);
+      border: 1px solid #2E75B6;
+      border-radius: 4px;
+      padding: 7px 10px 5px 10px;
+      margin-bottom: 6px;
+    }
+
+    /* selectize hover always blue */
+    .selectize-dropdown .option:hover,
+    .selectize-dropdown .option.active,
+    .selectize-dropdown .option.selected { background: #2E75B6 !important; color: #ffffff !important; }
+
+    /* scrollbar thumb always blue */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #2E75B6; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4FC3F7; }
+
+    /* misc */
+    .shiny-output-error, .shiny-output-error-message { color: #EF9A9A !important; }
+    .shiny-notification { background: #16213e !important; color: #ffffff !important; border: 1px solid #253050 !important; }
+    hr { margin: 8px 0; border-color: #253050; }
+    h4 { margin-bottom: 4px; margin-top: 12px; font-weight: normal !important; }
+    .well { font-size: 15px !important; }
+    .well h4 { font-size: 17px !important; }
+    .form-control:focus, input:focus {
+      border-color: #4FC3F7 !important;
+      box-shadow: 0 0 0 2px rgba(79,195,247,0.2) !important;
+    }
+    .selectize-input.focus {
+      border-color: #4FC3F7 !important;
+      box-shadow: 0 0 0 2px rgba(79,195,247,0.2) !important;
+    }
+    .selectize-control.single .selectize-input:after { border-top-color: #666666 !important; }
+
+    /* ===== DARK MODE (default) ===== */
+    html, body { background-color: #000000 !important; color: #ffffff !important; }
+    .tab-content, .col-sm-9, .col-sm-3 { background-color: #000000 !important; }
+    .container-fluid { background-color: #000000 !important; }
+    .container-fluid > h2, h2, h3, h4 { color: #ffffff !important; }
+    .well { background: #141414 !important; border: 1px solid #253050 !important; box-shadow: none !important; color: #ffffff !important; }
+    label, .control-label { color: #ffffff !important; font-size: 15px !important; }
+    p small { color: #90CAF9; font-size: 13px; }
+    .form-control, input[type="text"], input[type="number"], textarea, select {
+      background-color: #0d0d0d !important; color: #ffffff !important;
+      border: 1px solid #253050 !important; box-shadow: none !important;
+    }
+    .selectize-input {
+      background: #141414 !important; color: #ffffff !important;
+      border: 2px solid #333333 !important; box-shadow: none !important;
+      font-size: 15px !important; padding: 7px 10px !important;
+    }
+    .selectize-input > input { color: transparent !important; font-size: 1px !important; width: 0 !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: none !important; background: transparent !important; caret-color: transparent !important; }
+    .selectize-dropdown, .selectize-dropdown-content {
+      background: #141414 !important; border: 2px solid #333333 !important;
+      color: #ffffff !important; font-size: 15px !important;
+    }
+    .selectize-dropdown .option { color: #ffffff !important; padding: 7px 10px; font-size: 15px !important; }
+    .irs--shiny .irs-line { background: #333333; border-color: #333333; height: 8px; border-radius: 4px; }
+    .irs--shiny .irs-min, .irs--shiny .irs-max { color: #aaaaaa !important; font-size: 12px !important; background: transparent !important; }
+    .shiny-plot-output { background: #000000 !important; border-radius: 4px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    .teach-box label { color: #80CFFF !important; font-size: 14px !important; }
+
+    /* ===== LIGHT MODE (body.light-mode) ===== */
+    body.light-mode { background-color: #ffffff !important; color: #222222 !important; }
+    body.light-mode .tab-content,
+    body.light-mode .col-sm-9,
+    body.light-mode .col-sm-3,
+    body.light-mode .container-fluid { background-color: #ffffff !important; }
+    body.light-mode .container-fluid > h2,
+    body.light-mode h2, body.light-mode h3, body.light-mode h4 { color: #222222 !important; }
+    body.light-mode .well {
+      background: #f0f4f8 !important; color: #222222 !important;
+      border: 1px solid #c8d8e8 !important;
+    }
+    body.light-mode label, body.light-mode .control-label { color: #222222 !important; }
+    body.light-mode p small { color: #1a5276; }
+    body.light-mode .form-control, body.light-mode input[type="text"],
+    body.light-mode input[type="number"], body.light-mode textarea, body.light-mode select {
+      background-color: #ffffff !important; color: #222222 !important;
+      border: 1px solid #aaaaaa !important;
+    }
+    body.light-mode .selectize-input {
+      background: #ffffff !important; color: #222222 !important;
+      border: 2px solid #aaaaaa !important;
+    }
+    body.light-mode .selectize-input > input { color: transparent !important; font-size: 1px !important; width: 0 !important; min-width: 0 !important; padding: 0 !important; margin: 0 !important; border: none !important; background: transparent !important; caret-color: transparent !important; }
+    body.light-mode .selectize-dropdown, body.light-mode .selectize-dropdown-content {
+      background: #ffffff !important; border: 2px solid #aaaaaa !important;
+      color: #222222 !important;
+    }
+    body.light-mode .selectize-dropdown .option { color: #222222 !important; }
+    body.light-mode .irs--shiny .irs-line { background: #cccccc; border-color: #cccccc; }
+    body.light-mode .irs--shiny .irs-min, body.light-mode .irs--shiny .irs-max { color: #666666 !important; }
+    body.light-mode .shiny-plot-output { background: #ffffff !important; }
+    body.light-mode ::-webkit-scrollbar-track { background: #ffffff; }
+    body.light-mode .teach-box label { color: #1a4a7a !important; }
+    /* keep navbar dark even in light mode */
+    body.light-mode .navbar-inverse,
+    body.light-mode .navbar-inverse.navbar-fixed-top { background-color: #141414 !important; }
+    body.light-mode .navbar-inverse .container-fluid,
+    body.light-mode .navbar-inverse .navbar-header,
+    body.light-mode .navbar-inverse .navbar-collapse { background-color: transparent !important; }
+  '
+}
+
+# ============================================================
 # UTILITY FUNCTIONS
 # ============================================================
 
 get_founder_colors <- function(n) {
   base <- c(
-    "#CC0000",  # dark red
-    "#66BB6A",  # medium green
-    "#80D8FF",  # light sky blue
-    "#FFA726",  # amber
-    "#AB47BC",  # purple
-    "#26C6DA",  # cyan
-    "#E040FB",  # vivid magenta
-    "#9CCC65",  # lime green
-    "#5C6BC0",  # indigo
-    "#FFEE58",  # bright yellow
-    "#EC407A",  # hot pink
-    "#A1887F"   # rosy brown
+    "#CC0000", "#66BB6A", "#80D8FF", "#FFA726", "#AB47BC", "#26C6DA",
+    "#E040FB", "#9CCC65", "#5C6BC0", "#FFEE58", "#EC407A", "#A1887F"
   )
   if (n <= 12L) return(base[seq_len(n)])
   colorRampPalette(base)(n)
 }
 
-theme_dark_mpp <- function(base_size = 16) {
+theme_mpp <- function(light = FALSE, base_size = 16) {
+  cl <- get_colors(light)
   theme_minimal(base_size = base_size) %+replace%
     theme(
-      plot.background   = element_rect(fill = BG_PLOT,  color = NA),
-      panel.background  = element_rect(fill = BG_PLOT,  color = NA),
-      panel.grid.major  = element_line(color = COL_GRID, linewidth = 0.4),
+      plot.background   = element_rect(fill = cl$BG_PLOT,     color = NA),
+      panel.background  = element_rect(fill = cl$BG_PLOT,     color = NA),
+      panel.grid.major  = element_line(color = cl$COL_GRID,   linewidth = 0.4),
       panel.grid.minor  = element_blank(),
-      axis.text         = element_text(color = "#ffffff"),
-      axis.title        = element_text(color = "#ffffff"),
-      strip.background  = element_rect(fill = "#111111", color = NA),
-      strip.text        = element_text(color = "#ffffff", size = 11),
-      legend.background = element_rect(fill = BG_PLOT, color = NA),
-      legend.text       = element_text(color = "#ffffff"),
-      legend.title      = element_text(color = "#ffffff"),
-      legend.key        = element_rect(fill = BG_PLOT, color = NA)
+      axis.text         = element_text(color = cl$text),
+      axis.title        = element_text(color = cl$text),
+      strip.background  = element_rect(fill = cl$strip_fill,  color = NA),
+      strip.text        = element_text(color = cl$strip_text, size = base_size * 0.9),
+      legend.background = element_rect(fill = cl$BG_PLOT,     color = NA),
+      legend.text       = element_text(color = cl$text),
+      legend.title      = element_text(color = cl$text),
+      legend.key        = element_rect(fill = cl$BG_PLOT,     color = NA)
     )
 }
 
@@ -119,8 +311,6 @@ simulate_rils <- function(n_founders, n_gen, n_total, design) {
   haps
 }
 
-# teaching = TRUE uses fixed QTL positions so peaks stay in the same place
-# across repeated Simulate clicks — useful for classroom demonstrations.
 get_qtl_config <- function(model, n_founders, hub_design = FALSE, teaching = FALSE) {
   avail    <- if (hub_design && n_founders > 1L) seq(2L, n_founders) else seq_len(n_founders)
   n_effect <- max(1L, min(10L, round(0.1 * length(avail))))
@@ -281,11 +471,6 @@ qtl_scan_biparental <- function(geno, pheno) {
 # GWAS SIMULATION FUNCTIONS
 # ============================================================
 
-# Vectorized MAGIC-style mosaic simulation.
-# Uses a Markov chain over SNP positions: at each step, each individual
-# switches founder with probability p_switch = n_cross / (n_snps - 1).
-# This is ~50x faster than the per-individual loop for large n_ind,
-# making sample sizes up to 50 000 feasible.
 simulate_gwas_human <- function(n_ind, n_snps, n_founders = 12L,
                                 n_cross = 8L, maf_min = 0.05) {
   positions    <- seq(0, 100, length.out = n_snps)
@@ -297,8 +482,10 @@ simulate_gwas_human <- function(n_ind, n_snps, n_founders = 12L,
 
   p_switch <- n_cross / max(n_snps - 1L, 1L)
 
+  # Only store haplotype visualisation rows for a subsample (saves ~400 MB at N=100k)
+  n_vis     <- min(n_ind, 300L)
   geno      <- matrix(0L, nrow = n_ind, ncol = n_snps)
-  block_vis <- matrix(0L, nrow = n_ind, ncol = n_snps)
+  block_vis <- matrix(0L, nrow = n_vis, ncol = n_snps)
 
   h1 <- sample.int(n_founders, n_ind, replace = TRUE)
   h2 <- sample.int(n_founders, n_ind, replace = TRUE)
@@ -311,34 +498,40 @@ simulate_gwas_human <- function(n_ind, n_snps, n_founders = 12L,
       if (length(sw2) > 0L) h2[sw2] <- sample.int(n_founders, length(sw2), replace = TRUE)
     }
     geno[, pos]      <- as.integer(founder_haps[h1, pos]) + as.integer(founder_haps[h2, pos])
-    block_vis[, pos] <- h1
+    block_vis[, pos] <- h1[seq_len(n_vis)]
   }
 
   block_idx <- rep(seq_len(n_founders), each = ceiling(n_snps / n_founders))[seq_len(n_snps)]
 
   list(geno = geno, positions = positions, n_snps = n_snps,
        block_idx = block_idx, n_blocks = n_founders,
-       n_founders = n_founders, block_vis = block_vis)
+       n_founders = n_founders, block_vis = block_vis, n_vis = n_vis)
 }
 
-qtl_scan_gwas <- function(geno, pheno) {
-  n      <- length(pheno)
-  g_c    <- scale(geno)
-  p_c    <- as.vector(scale(pheno))
-  r      <- as.vector(crossprod(g_c, p_c)) / (n - 1L)
-  r      <- pmax(pmin(r, 1 - 1e-10), -(1 - 1e-10))
-  t_stat <- r * sqrt((n - 2L) / (1 - r^2))
-  pv     <- 2 * pt(abs(t_stat), df = n - 2L, lower.tail = FALSE)
+# Memory-efficient chi-squared scan: compares allele counts in cases vs controls.
+# Replaces the old scale(geno) approach which allocated an extra 800 MB at N=100k.
+qtl_scan_gwas <- function(geno, case_idx, ctrl_idx) {
+  case_sum  <- colSums(geno[case_idx, , drop = FALSE])
+  ctrl_sum  <- colSums(geno[ctrl_idx, , drop = FALSE])
+  n_case    <- length(case_idx)
+  n_ctrl    <- length(ctrl_idx)
+  n_total   <- n_case + n_ctrl
+  total_sum <- case_sum + ctrl_sum
+  p_null    <- total_sum / (2.0 * n_total)
+  exp_case  <- 2.0 * n_case * p_null
+  exp_ctrl  <- 2.0 * n_ctrl * p_null
+  chi2 <- (case_sum - exp_case)^2 / pmax(exp_case, 1e-10) +
+          (ctrl_sum - exp_ctrl)^2 / pmax(exp_ctrl, 1e-10)
+  pv <- pchisq(chi2, df = 1L, lower.tail = FALSE)
   ifelse(is.finite(pv) & pv > 0, -log10(pv), 0)
 }
 
 # ============================================================
 # PLOT HELPER FUNCTIONS
-# (Used by both renderPlot and downloadHandler so saved plots
-#  always match what is displayed on screen.)
 # ============================================================
 
-make_mpp_cases_plot <- function(r) {
+make_mpp_cases_plot <- function(r, light = FALSE, base_size = 16) {
+  cl           <- get_colors(light)
   nf           <- r$n_founders
   cols         <- get_founder_colors(nf)
   case_haps    <- r$obs_haps[r$disp_case, , drop = FALSE]
@@ -369,37 +562,40 @@ make_mpp_cases_plot <- function(r) {
     scale_x_continuous(expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "RIL") +
-    theme_dark_mpp() +
-    theme(panel.grid = element_blank(), axis.text.y = element_blank(),
+    theme_mpp(light = light, base_size = base_size) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
-          strip.text = element_text(color = "#ffffff", face = "bold", size = 22),
+          strip.text = element_text(color = cl$strip_text, face = "bold",
+                                    size = base_size * 1.3),
           legend.position = if (show_legend) "bottom" else "none")
   if (length(r$qtl_pos) > 0)
-    p <- p + geom_vline(xintercept = r$qtl_pos, color = "#ffffff", linewidth = 1.6)
+    p <- p + geom_vline(xintercept = r$qtl_pos, color = cl$qtl_line, linewidth = 1.6)
   p
 }
 
-make_mpp_lod_plot <- function(r) {
+make_mpp_lod_plot <- function(r, light = FALSE, base_size = 16) {
+  cl     <- get_colors(light)
   lod_df <- data.frame(position = POS_SEQ, lod = r$lod)
   y_max  <- max(r$lod_thresh * 1.5, max(r$lod) * 1.15, na.rm = TRUE)
   p <- ggplot(lod_df, aes(x = position, y = lod)) +
-    geom_line(color = "#D0E8FF", linewidth = 1) +
+    geom_line(color = cl$lod_line, linewidth = 1) +
     annotate("segment", x = 0, xend = 100, y = r$lod_thresh, yend = r$lod_thresh,
-             linetype = "dashed", color = "#64B5F6", linewidth = 0.7) +
+             linetype = "dashed", color = cl$lod_thresh, linewidth = 0.7) +
     scale_x_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "LOD") +
-    theme_dark_mpp() +
+    theme_mpp(light = light, base_size = base_size) +
     theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#222222", linewidth = 0.4),
-          plot.background  = element_rect(fill = BG_PLOT_LIGHT, color = NA),
-          panel.background = element_rect(fill = BG_PLOT_LIGHT, color = NA))
+          panel.grid.major = element_line(color = cl$grid_major, linewidth = 0.4),
+          plot.background  = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA),
+          panel.background = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA))
   if (length(r$qtl_pos) > 0)
-    p <- p + geom_vline(xintercept = r$qtl_pos, color = "#ffffff", linewidth = 1.6)
+    p <- p + geom_vline(xintercept = r$qtl_pos, color = cl$qtl_line, linewidth = 1.6)
   p
 }
 
-make_mpp_freq_plot <- function(r) {
+make_mpp_freq_plot <- function(r, light = FALSE, base_size = 16) {
+  cl           <- get_colors(light)
   nf           <- r$n_founders
   cols         <- get_founder_colors(nf)
   nc           <- length(r$case_idx)
@@ -423,23 +619,24 @@ make_mpp_freq_plot <- function(r) {
   p <- ggplot(df, aes(x = position, y = diff, color = founder)) +
     geom_line(linewidth = 1.1, alpha = 1) +
     annotate("segment", x = 0, xend = 100, y = 0, yend = 0,
-             color = "#666666", linewidth = 0.7) +
+             color = cl$freq_zero, linewidth = 0.7) +
     scale_color_manual(values = cols, drop = FALSE,
       guide = if (nf <= 16) guide_legend(title = "Founder", nrow = ceiling(nf / 8)) else "none") +
     scale_x_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.01))) +
     labs(x = "Position (cM)", y = "Freq diff") +
-    theme_dark_mpp() +
+    theme_mpp(light = light, base_size = base_size) +
     theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#222222", linewidth = 0.4),
+          panel.grid.major = element_line(color = cl$grid_major, linewidth = 0.4),
           legend.position  = if (nf <= 16) "bottom" else "none",
-          plot.background  = element_rect(fill = BG_PLOT_LIGHT, color = NA),
-          panel.background = element_rect(fill = BG_PLOT_LIGHT, color = NA))
+          plot.background  = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA),
+          panel.background = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA))
   if (length(r$qtl_pos) > 0)
-    p <- p + geom_vline(xintercept = r$qtl_pos, color = "#ffffff", linewidth = 1.6)
+    p <- p + geom_vline(xintercept = r$qtl_pos, color = cl$qtl_line, linewidth = 1.6)
   p
 }
 
-make_f2_hap_plot <- function(r) {
+make_f2_hap_plot <- function(r, light = FALSE, base_size = 16) {
+  cl  <- get_colors(light)
   idx <- r$hap_idx
   nd  <- length(idx)
   df  <- data.frame(
@@ -454,35 +651,37 @@ make_f2_hap_plot <- function(r) {
     scale_x_continuous(expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "F2 individual") +
-    theme_dark_mpp() +
-    theme(panel.grid = element_blank(), axis.text.y = element_blank(),
+    theme_mpp(light = light, base_size = base_size) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.y = element_blank(),
           axis.ticks.y = element_blank(), legend.position = "bottom")
   if (length(r$qtl_pos) > 0)
-    p <- p + geom_vline(xintercept = r$qtl_pos, color = "#ffffff", linewidth = 1.6)
+    p <- p + geom_vline(xintercept = r$qtl_pos, color = cl$qtl_line, linewidth = 1.6)
   p
 }
 
-make_f2_lod_plot <- function(r) {
+make_f2_lod_plot <- function(r, light = FALSE, base_size = 16) {
+  cl    <- get_colors(light)
   y_max <- max(r$lod_thresh * 1.5, max(r$lod) * 1.15, na.rm = TRUE)
   df    <- data.frame(position = POS_SEQ, lod = r$lod)
   p <- ggplot(df, aes(x = position, y = lod)) +
-    geom_line(color = "#D0E8FF", linewidth = 1) +
+    geom_line(color = cl$lod_line, linewidth = 1) +
     annotate("segment", x = 0, xend = 100, y = r$lod_thresh, yend = r$lod_thresh,
-             linetype = "dashed", color = "#64B5F6", linewidth = 0.7) +
+             linetype = "dashed", color = cl$lod_thresh, linewidth = 0.7) +
     scale_x_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "LOD") +
-    theme_dark_mpp() +
+    theme_mpp(light = light, base_size = base_size) +
     theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#222222", linewidth = 0.4),
-          plot.background  = element_rect(fill = BG_PLOT_LIGHT, color = NA),
-          panel.background = element_rect(fill = BG_PLOT_LIGHT, color = NA))
+          panel.grid.major = element_line(color = cl$grid_major, linewidth = 0.4),
+          plot.background  = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA),
+          panel.background = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA))
   if (length(r$qtl_pos) > 0)
-    p <- p + geom_vline(xintercept = r$qtl_pos, color = "#ffffff", linewidth = 1.6)
+    p <- p + geom_vline(xintercept = r$qtl_pos, color = cl$qtl_line, linewidth = 1.6)
   p
 }
 
-make_gwas_hap_plot <- function(r) {
+make_gwas_hap_plot <- function(r, light = FALSE, base_size = 16) {
+  cl        <- get_colors(light)
   cols      <- get_founder_colors(r$n_founders)
   n_disp    <- min(50L, length(r$case_idx))
   disp_case <- r$case_idx[seq_len(n_disp)]
@@ -512,36 +711,41 @@ make_gwas_hap_plot <- function(r) {
     scale_x_continuous(expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "Individual") +
-    theme_dark_mpp() +
-    theme(panel.grid = element_blank(), axis.text.y = element_blank(),
+    theme_mpp(light = light, base_size = base_size) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
-          strip.text = element_text(color = "#ffffff", size = 22))
+          strip.text = element_text(color = cl$strip_text, size = base_size * 1.3))
   if (!anyNA(r$qtl_snp) && !is.null(r$qtl_snp))
     p <- p + geom_vline(xintercept = r$positions[r$qtl_snp],
-                        color = "#ffffff", linewidth = 0.6, alpha = 0.9)
+                        color = cl$qtl_line, linewidth = 0.6, alpha = 0.9)
   p
 }
 
-make_gwas_manhattan <- function(r) {
-  block_col <- ifelse(r$block_idx %% 2L == 0L, "#80D8FF", "#4FC3F7")
-  df        <- data.frame(position = r$positions, lod = r$lod, col = block_col)
-  y_max     <- max(r$lod_thresh * 1.5, max(r$lod) * 1.15, na.rm = TRUE)
+make_gwas_manhattan <- function(r, light = FALSE, base_size = 16) {
+  cl        <- get_colors(light)
+  block_col <- if (light) {
+    ifelse(r$block_idx %% 2L == 0L, "#1a5276", "#2980b9")
+  } else {
+    ifelse(r$block_idx %% 2L == 0L, "#80D8FF", "#4FC3F7")
+  }
+  df    <- data.frame(position = r$positions, lod = r$lod, col = block_col)
+  y_max <- max(r$lod_thresh * 1.5, max(r$lod) * 1.15, na.rm = TRUE)
   p <- ggplot(df, aes(x = position, y = lod, color = col)) +
     geom_point(size = 2.0, alpha = 0.9) +
     annotate("segment", x = 0, xend = 100, y = r$lod_thresh, yend = r$lod_thresh,
-             linetype = "dashed", color = "#64B5F6", linewidth = 0.7) +
+             linetype = "dashed", color = cl$lod_thresh, linewidth = 0.7) +
     scale_color_identity(guide = "none") +
     scale_x_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.01))) +
     scale_y_continuous(limits = c(0, y_max), expand = c(0, 0)) +
     labs(x = "Position (cM)", y = "LOD") +
-    theme_dark_mpp() +
+    theme_mpp(light = light, base_size = base_size) +
     theme(panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#222222", linewidth = 0.4),
-          plot.background  = element_rect(fill = BG_PLOT_LIGHT, color = NA),
-          panel.background = element_rect(fill = BG_PLOT_LIGHT, color = NA))
+          panel.grid.major = element_line(color = cl$grid_major, linewidth = 0.4),
+          plot.background  = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA),
+          panel.background = element_rect(fill = cl$BG_PLOT_LIGHT, color = NA))
   if (!anyNA(r$qtl_snp) && !is.null(r$qtl_snp))
     p <- p + geom_vline(xintercept = r$positions[r$qtl_snp],
-                        color = "#ffffff", linewidth = 0.6, alpha = 0.9)
+                        color = cl$qtl_line, linewidth = 0.6, alpha = 0.9)
   p
 }
 
@@ -551,165 +755,32 @@ make_gwas_manhattan <- function(r) {
 
 ui <- navbarPage(
   title = "Cross Examination",
-  tags$head(tags$style(HTML(paste0("
+  position = "fixed-top",
+  inverse = TRUE,   # Bootstrap dark navbar with white text -- no CSS specificity battles
 
-    /* Navbar */
-    .navbar, .navbar-default {
-      background-color: ", BG_PANEL, " !important;
-      border-color: #253050 !important;
-    }
-    .navbar-default .navbar-brand { color: #90CAF9 !important; font-size: 17px !important; }
-    .navbar-default .navbar-nav > li > a { color: #ffffff !important; font-size: 15px !important; }
-    .navbar-default .navbar-nav > .active > a,
-    .navbar-default .navbar-nav > .active > a:focus,
-    .navbar-default .navbar-nav > .active > a:hover {
-      background-color: #2E75B6 !important; color: #ffffff !important;
-    }
-    .navbar-default .navbar-nav > li > a:hover { background-color: #253050 !important; }
-    .tab-content { background-color: ", BG_PAGE, " !important; }
+  # Static CSS for both modes; JS handler toggles body.light-mode class
+  tags$head(
+    tags$style(HTML(make_app_css())),
+    tags$script(HTML('
+      Shiny.addCustomMessageHandler("toggleLightMode", function(light) {
+        if (light) {
+          document.body.classList.add("light-mode");
+        } else {
+          document.body.classList.remove("light-mode");
+        }
+      });
+    '))
+  ),
 
-    /* ===================================================
-       FULL DARK MODE
-       =================================================== */
-
-    html, body, .container-fluid {
-      background-color: ", BG_PAGE, " !important;
-      color: #ffffff !important;
-      font-family: Arial, sans-serif;
-      font-size: 15px;
-    }
-
-    .container-fluid > h2, h2, h3 { color: #ffffff !important; }
-    h4 { color: #ffffff; margin-bottom: 4px; margin-top: 12px; font-weight: normal !important; }
-    hr { margin: 8px 0; border-color: #253050; }
-
-    .well {
-      background: ", BG_PANEL, " !important;
-      border: 1px solid #253050 !important;
-      box-shadow: none;
-      color: #ffffff !important;
-    }
-
-    label, .control-label { color: #ffffff !important; font-size: 15px !important; }
-    p small { color: #90CAF9; font-size: 13px; }
-
-    .well { font-size: 15px !important; }
-    .well h4 { font-size: 17px !important; }
-
-    .form-control, input, textarea, select {
-      background-color: #0d0d0d !important;
-      color: #ffffff !important;
-      border: 1px solid #253050 !important;
-      box-shadow: none !important;
-    }
-    .form-control:focus, input:focus {
-      border-color: #4FC3F7 !important;
-      box-shadow: 0 0 0 2px rgba(79,195,247,0.2) !important;
-    }
-
-    .selectize-input {
-      background: #141414 !important;
-      color: #ffffff !important;
-      border: 2px solid #333333 !important;
-      box-shadow: none !important;
-      font-size: 15px !important;
-      padding: 7px 10px !important;
-    }
-    .selectize-input.focus {
-      border-color: #4FC3F7 !important;
-      box-shadow: 0 0 0 2px rgba(79,195,247,0.2) !important;
-    }
-    .selectize-input > input { color: #ffffff !important; font-size: 15px !important; }
-    .selectize-dropdown,
-    .selectize-dropdown-content {
-      background: #141414 !important;
-      border: 2px solid #333333 !important;
-      color: #ffffff !important;
-      font-size: 15px !important;
-    }
-    .selectize-dropdown .option { color: #ffffff !important; padding: 7px 10px; font-size: 15px !important; }
-    .selectize-dropdown .option:hover,
-    .selectize-dropdown .option.active,
-    .selectize-dropdown .option.selected {
-      background: #2E75B6 !important;
-      color: #ffffff !important;
-    }
-    .selectize-control.single .selectize-input:after {
-      border-top-color: #666666 !important;
-    }
-
-    .irs--shiny .irs-line  { background: #333333; border-color: #333333; height: 8px; border-radius: 4px; }
-    .irs--shiny .irs-bar   { background: #2E75B6; border-color: #2E75B6; height: 8px; }
-    .irs--shiny .irs-from,
-    .irs--shiny .irs-to,
-    .irs--shiny .irs-single { background: #2E75B6; color: #ffffff !important; font-size: 13px !important; }
-    .irs--shiny .irs-handle { background: #4FC3F7 !important; border: 2px solid #ffffff !important; width: 20px !important; height: 20px !important; top: 21px !important; }
-    .irs--shiny .irs-min,
-    .irs--shiny .irs-max   { color: #aaaaaa !important; font-size: 12px !important; background: transparent !important; }
-    .irs--shiny .irs-grid-text { display: none !important; }
-    .irs--shiny .irs-grid-pol { display: none !important; }
-
-    #simulate {
-      background: #2E75B6 !important;
-      color: #fff !important;
-      border: none !important;
-    }
-    #simulate:hover { background: #4194D4 !important; }
-    #simulate:active { background: #1a5a96 !important; }
-
-    .col-sm-9, .col-sm-3 { background: ", BG_PAGE, " !important; }
-
-    .shiny-plot-output {
-      background: ", BG_PLOT, " !important;
-      border-radius: 4px;
-    }
-
-    .shiny-output-error, .shiny-output-error-message { color: #EF9A9A !important; }
-    .shiny-notification {
-      background: #16213e !important;
-      color: #ffffff !important;
-      border: 1px solid #253050 !important;
-    }
-
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: ", BG_PAGE, "; }
-    ::-webkit-scrollbar-thumb { background: #2E75B6; border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: #4FC3F7; }
-
-    /* ── Teaching mode box ── */
-    .teach-box {
-      background: rgba(46, 117, 182, 0.12);
-      border: 1px solid #2E75B6;
-      border-radius: 4px;
-      padding: 7px 10px 5px 10px;
-      margin-bottom: 6px;
-    }
-    .teach-box label { color: #80CFFF !important; font-size: 14px !important; }
-
-    /* ── Download button ── */
-    .shiny-download-link {
-      display: block !important;
-      width: 100% !important;
-      text-align: center !important;
-      background: #1a5a96 !important;
-      color: #fff !important;
-      border: none !important;
-      padding: 8px !important;
-      border-radius: 4px !important;
-      font-size: 14px !important;
-      margin-top: 6px !important;
-      text-decoration: none !important;
-      box-sizing: border-box !important;
-    }
-    .shiny-download-link:hover {
-      background: #2E75B6 !important;
-      color: #fff !important;
-      text-decoration: none !important;
-    }
-  ")))),
+  # Light/dark toggle fixed to top-right of navbar
+  header = tags$div(
+    id = "mode-toggle",
+    style = "position:fixed; top:10px; right:20px; z-index:2000;",
+    checkboxInput("light_mode", "Light Mode", value = FALSE, width = "auto")
+  ),
 
   # ── Tab 1: MPP / BSA ─────────────────────────────────────
-  tabPanel("MPP / BSA",
+  tabPanel("MPP",
   sidebarLayout(
     sidebarPanel(
       width = 3,
@@ -726,7 +797,7 @@ ui <- navbarPage(
         width = "100%"),
       sliderInput("n_founders", "Founders",
                   min=2, max=30, value=8, step=2, width="100%"),
-      sliderInput("n_gen", "Generations of recombination / selfing",
+      sliderInput("n_gen", "Generations of recombination/selfing",
                   min=1, max=50, value=10, step=1, width="100%"),
       conditionalPanel(
         condition = "input.design == 'hub'",
@@ -769,7 +840,7 @@ ui <- navbarPage(
 
       hr(),
       h4("Significance Threshold"),
-      p(tags$small("Bonferroni (202 tests, α=0.05): LOD 3.6")),
+      p(tags$small("Bonferroni (202 tests, alpha=0.05): LOD 3.6")),
 
       br(),
       actionButton("simulate", "Simulate",
@@ -799,15 +870,15 @@ ui <- navbarPage(
 
       h4("QTL Scan"),
       p(tags$small(
-        "Fisher's exact test (1 rep) or CMH (multiple reps) on founder counts, smoothed with 5-position rolling average. ",
-        tags$span(style="color:#ffffff; font-weight:bold;", "White line"),
+        "G-test (1 rep) or CMH (multiple reps) on founder counts, smoothed with 5-position rolling average. ",
+        tags$span(style="color:#aaaaaa; font-weight:bold;", "Colored line"),
         " = true QTL.  ",
         tags$span(style="color:#64B5F6;", "Blue dashed"),
         " = LOD threshold."
       )),
       plotOutput("lod_plot", height = "200px"),
 
-      h4("Founder Frequency: Cases − Controls"),
+      h4("Founder Frequency: Cases minus Controls"),
       p(tags$small("Difference in founder frequency between pools at each position.")),
       plotOutput("freq_plot", height = "280px")
     )
@@ -827,7 +898,7 @@ ui <- navbarPage(
 
         h4("Cross Design"),
         p(tags$small(
-          "Two inbred or distinct parents (P1 × P2) are crossed to make F1 offspring. ",
+          "Two inbred or distinct parents (P1 x P2) are crossed to make F1 offspring. ",
           "F1 individuals are crossed to produce F2 offspring. ",
           "Each F2 chromosome is a mosaic of P1 and P2 segments created by recombination."
         )),
@@ -846,7 +917,7 @@ ui <- navbarPage(
 
         hr(),
         h4("Significance Threshold"),
-        p(tags$small("Bonferroni (202 tests, α=0.05): LOD 3.6")),
+        p(tags$small("Bonferroni (202 tests, alpha=0.05): LOD 3.6")),
         br(),
         actionButton("f2_simulate", "Simulate",
                      width="100%",
@@ -857,7 +928,7 @@ ui <- navbarPage(
       mainPanel(
         width = 9,
         h4("Parents"),
-        p(tags$small("Parent 1 (red) and Parent 2 (blue). Both are fully inbred — every locus is fixed.")),
+        p(tags$small("Parent 1 (red) and Parent 2 (blue). Both are fully inbred: every locus is fixed.")),
         plotOutput("f2_parents_plot", height="70px"),
 
         h4("F2 Haplotype Mosaic"),
@@ -871,7 +942,7 @@ ui <- navbarPage(
         h4("QTL Scan"),
         p(tags$small(
           "Additive regression (F-test) at each position, smoothed with 5-position rolling average. ",
-          tags$span(style="color:#ffffff; font-weight:bold;", "White line"),
+          tags$span(style="color:#aaaaaa; font-weight:bold;", "Colored line"),
           " = true QTL.  ",
           tags$span(style="color:#64B5F6;", "Blue dashed"),
           " = LOD threshold."
@@ -896,7 +967,7 @@ ui <- navbarPage(
         p(tags$small(
           "Outbred population. 1000 SNPs across 100 cM (10 SNPs/cM). ",
           "Each chromosome is divided into large LD blocks. ",
-          "All SNPs within a block are co-inherited — a causal SNP pulls up every SNP in its block."
+          "All SNPs within a block are co-inherited: a causal SNP pulls up every SNP in its block."
         )),
         sliderInput("gwas_n_ind", "Individuals",
                     min=500, max=100000, value=10000, step=500, width="100%"),
@@ -919,7 +990,7 @@ ui <- navbarPage(
 
         hr(),
         h4("Significance Threshold"),
-        p(tags$small("Bonferroni (α = 0.05, 1000 tests): LOD 4.3")),
+        p(tags$small("Bonferroni (alpha = 0.05, 1000 tests): LOD 4.3")),
         br(),
         actionButton("gwas_simulate", "Simulate",
                      width="100%",
@@ -938,8 +1009,8 @@ ui <- navbarPage(
 
         h4("Manhattan Plot"),
         p(tags$small(
-          "Chi-square test of allele frequency difference (cases vs. controls) at each of 1000 SNPs. LOD = −log₁₀(p). ",
-          tags$span(style="color:#ffffff; font-weight:bold;", "White line"),
+          "Chi-square test of allele frequency difference (cases vs. controls) at each of 1000 SNPs. LOD = log10(p). ",
+          tags$span(style="color:#aaaaaa; font-weight:bold;", "Colored line"),
           " = true causal SNP.  ",
           tags$span(style="color:#64B5F6;", "Blue dashed"),
           " = LOD threshold. ",
@@ -958,6 +1029,13 @@ ui <- navbarPage(
 
 server <- function(input, output, session) {
 
+  # Toggle body.light-mode class via JS whenever the checkbox changes
+  observeEvent(input$light_mode, {
+    session$sendCustomMessage("toggleLightMode", isTRUE(input$light_mode))
+  })
+
+  # ── MPP / BSA server ───────────────────────────────────
+
   results <- eventReactive(input$simulate, {
     pool_size <- input$pool_size
     n_total   <- 3L * pool_size
@@ -972,6 +1050,7 @@ server <- function(input, output, session) {
     founder_haps <- matrix(rep(seq_len(input$n_founders), each = N_POS),
                            nrow = input$n_founders, ncol = N_POS)
 
+    # Rep 1 haplotypes are kept for the haplotype visualization
     obs_haps <- simulate_rils(input$n_founders, input$n_gen, n_total, input$design)
 
     haps_list     <- vector("list", n_reps)
@@ -979,12 +1058,19 @@ server <- function(input, output, session) {
     ctrl_idx_list <- vector("list", n_reps)
 
     for (rep_i in seq_len(n_reps)) {
-      pheno      <- simulate_phenotype(obs_haps, qtl_cfg)
+      # Each replicate draws an independent population of RILs.
+      # This means LD-driven false peaks fall at different positions each rep
+      # and cancel out in the CMH, while the true QTL (fixed position, same
+      # biological effect) accumulates consistently across reps.
+      rep_haps   <- if (rep_i == 1L) obs_haps else
+                    simulate_rils(input$n_founders, input$n_gen, n_total, input$design)
+      pheno      <- simulate_phenotype(rep_haps, qtl_cfg)
+      pheno      <- pheno + rnorm(n_total, 0, 1.0)   # environmental noise (SD=1)
       ranked     <- order(pheno, decreasing = TRUE)
       ci         <- ranked[seq_len(pool_size)]
       unselected <- ranked[(pool_size + 1L):n_total]
       ki         <- sample(unselected, pool_size)
-      haps_list[[rep_i]]     <- obs_haps
+      haps_list[[rep_i]]     <- rep_haps
       case_idx_list[[rep_i]] <- ci
       ctrl_idx_list[[rep_i]] <- ki
     }
@@ -992,41 +1078,43 @@ server <- function(input, output, session) {
     raw_lod <- qtl_scan(haps_list, case_idx_list, ctrl_idx_list)
     lod     <- smooth_lod(raw_lod, window = 5L)
 
-    ci1 <- case_idx_list[[1L]]
-    ki1 <- ctrl_idx_list[[1L]]
+    ci1       <- case_idx_list[[1L]]
+    ki1       <- ctrl_idx_list[[1L]]
     disp_all  <- sample.int(n_total, min(n_display * 2L, n_total))
     disp_case <- ci1[seq_len(n_display)]
     disp_ctrl <- ki1[seq_len(n_display)]
 
     list(
-      obs_haps     = obs_haps,
-      founder_haps = founder_haps,
-      lod          = lod,
-      qtl_pos      = qtl_cfg$pos,
-      qtl_eff      = qtl_cfg$eff,
-      n_founders   = input$n_founders,
-      pool_size    = pool_size,
-      n_reps       = n_reps,
-      n_display    = n_display,
-      lod_thresh   = 3.6,
-      case_idx     = ci1,
-      control_idx  = ki1,
-      disp_all     = disp_all,
-      disp_case    = disp_case,
-      disp_ctrl    = disp_ctrl,
-      teaching     = teach,
-      design       = input$design,
+      obs_haps      = obs_haps,
+      founder_haps  = founder_haps,
+      lod           = lod,
+      qtl_pos       = qtl_cfg$pos,
+      qtl_eff       = qtl_cfg$eff,
+      n_founders    = input$n_founders,
+      pool_size     = pool_size,
+      n_reps        = n_reps,
+      n_display     = n_display,
+      lod_thresh    = 3.6,
+      case_idx      = ci1,
+      control_idx   = ki1,
+      disp_all      = disp_all,
+      disp_case     = disp_case,
+      disp_ctrl     = disp_ctrl,
+      teaching      = teach,
+      design        = input$design,
       n_founders_in = input$n_founders,
-      n_gen        = input$n_gen,
+      n_gen         = input$n_gen,
       genetic_model = input$genetic_model
     )
   })
 
   output$founder_plot <- renderPlot({
     req(results())
-    r    <- results()
-    nf   <- r$n_founders
-    cols <- get_founder_colors(nf)
+    r     <- results()
+    light <- isTRUE(input$light_mode)
+    cl    <- get_colors(light)
+    nf    <- r$n_founders
+    cols  <- get_founder_colors(nf)
     df <- data.frame(
       position = rep(POS_SEQ, each = nf),
       founder  = rep(seq_len(nf), times = N_POS),
@@ -1041,15 +1129,17 @@ server <- function(input, output, session) {
         labels = if (nf <= 20) paste0("F", seq_len(nf)) else
                    c("F1", paste0("F", seq(10, nf, by=10)))) +
       labs(x = "Position (cM)", y = "Founder") +
-      theme_dark_mpp() +
-      theme(panel.grid = element_blank(), axis.text.y = element_text(size = 9))
-  }, bg = BG_PLOT)
+      theme_mpp(light = light) +
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+            axis.text.y = element_text(size = 9, color = cl$text))
+  }, bg = "white")
 
   output$hap_plot <- renderPlot({
     req(results())
-    r    <- results()
-    nf   <- r$n_founders
-    cols <- get_founder_colors(nf)
+    r     <- results()
+    light <- isTRUE(input$light_mode)
+    nf    <- r$n_founders
+    cols  <- get_founder_colors(nf)
     disp_haps <- r$obs_haps[r$disp_all, , drop = FALSE]
     nd <- nrow(disp_haps)
     df <- data.frame(
@@ -1065,33 +1155,38 @@ server <- function(input, output, session) {
       scale_x_continuous(expand = expansion(mult = c(0, 0.01))) +
       scale_y_continuous(expand = c(0, 0)) +
       labs(x = "Position (cM)", y = "RIL") +
-      theme_dark_mpp() +
-      theme(panel.grid = element_blank(), axis.text.y = element_blank(),
+      theme_mpp(light = light) +
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.y = element_blank(),
             axis.ticks.y = element_blank(),
             legend.position = if (show_legend) "bottom" else "none")
-  }, bg = BG_PLOT)
+  }, bg = "white")
 
   output$cases_plot <- renderPlot({
-    req(results()); make_mpp_cases_plot(results())
-  }, bg = BG_PLOT)
+    req(results())
+    make_mpp_cases_plot(results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   output$lod_plot <- renderPlot({
-    req(results()); make_mpp_lod_plot(results())
-  }, bg = BG_PLOT_LIGHT)
+    req(results())
+    make_mpp_lod_plot(results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   output$freq_plot <- renderPlot({
-    req(results()); make_mpp_freq_plot(results())
-  }, bg = BG_PLOT_LIGHT)
+    req(results())
+    make_mpp_freq_plot(results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   # MPP download handler
   output$download_mpp <- downloadHandler(
     filename = function() paste0("mpp_plot_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"),
     content  = function(file) {
       req(results())
-      r  <- results()
-      p1 <- make_mpp_cases_plot(r)
-      p2 <- make_mpp_lod_plot(r)
-      p3 <- make_mpp_freq_plot(r)
+      r     <- results()
+      light <- isolate(isTRUE(input$light_mode))
+      cl    <- get_colors(light)
+      p1 <- make_mpp_cases_plot(r, light = light, base_size = 28)
+      p2 <- make_mpp_lod_plot(r,   light = light, base_size = 28)
+      p3 <- make_mpp_freq_plot(r,  light = light, base_size = 28)
       tm <- if (isTRUE(r$teaching)) "On" else "Off"
       design_label <- switch(r$design,
         "magic" = "Fully intercrossed", "hub" = "Hub-and-spoke", r$design)
@@ -1100,16 +1195,16 @@ server <- function(input, output, session) {
         "  |  Founders: ", r$n_founders_in,
         "  |  Generations: ", r$n_gen,
         "  |  Pool: ", r$pool_size,
-        "  |  Replicates: ", r$n_reps,
+        "\nReplicates: ", r$n_reps,
         "  |  Model: ", r$genetic_model,
         "  |  LOD threshold: 3.6 (Bonferroni)",
         "  |  Teaching mode: ", tm
       )
-      png(file, width = 2000, height = 2200, res = 150, bg = BG_PLOT)
+      png(file, width = 2400, height = 2600, res = 150, bg = cl$BG_PLOT)
       gridExtra::grid.arrange(
         p1, p2, p3, ncol = 1,
         bottom = grid::textGrob(caption,
-          gp = grid::gpar(fontsize = 10, col = "#aaaaaa"), hjust = 0.5)
+          gp = grid::gpar(fontsize = 22, col = cl$caption), hjust = 0.5)
       )
       dev.off()
     }
@@ -1147,6 +1242,8 @@ server <- function(input, output, session) {
 
   output$f2_parents_plot <- renderPlot({
     req(f2_results())
+    light <- isTRUE(input$light_mode)
+    cl    <- get_colors(light)
     df <- data.frame(
       position = rep(POS_SEQ, 2L),
       ind      = rep(c(2L, 1L), each = N_POS),
@@ -1160,40 +1257,44 @@ server <- function(input, output, session) {
       scale_y_continuous(breaks = c(1L, 2L), labels = c("Parent 2", "Parent 1"),
                          expand = c(0.2, 0)) +
       labs(x = NULL, y = NULL) +
-      theme_dark_mpp(base_size = 13) +
-      theme(panel.grid = element_blank(), axis.text.x = element_blank(),
+      theme_mpp(light = light, base_size = 13) +
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_blank(),
             axis.ticks.x = element_blank(), legend.position = "right",
-            legend.text = element_text(size = 11))
-  }, bg = BG_PLOT)
+            legend.text = element_text(size = 11, color = cl$text))
+  }, bg = "white")
 
   output$f2_hap_plot <- renderPlot({
-    req(f2_results()); make_f2_hap_plot(f2_results())
-  }, bg = BG_PLOT)
+    req(f2_results())
+    make_f2_hap_plot(f2_results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   output$f2_lod_plot <- renderPlot({
-    req(f2_results()); make_f2_lod_plot(f2_results())
-  }, bg = BG_PLOT_LIGHT)
+    req(f2_results())
+    make_f2_lod_plot(f2_results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   # F2 download handler
   output$download_f2 <- downloadHandler(
     filename = function() paste0("biparental_plot_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"),
     content  = function(file) {
       req(f2_results())
-      r  <- f2_results()
-      p1 <- make_f2_hap_plot(r)
-      p2 <- make_f2_lod_plot(r)
+      r     <- f2_results()
+      light <- isolate(isTRUE(input$light_mode))
+      cl    <- get_colors(light)
+      p1 <- make_f2_hap_plot(r, light = light, base_size = 28)
+      p2 <- make_f2_lod_plot(r, light = light, base_size = 28)
       tm <- if (isTRUE(r$teaching)) "On" else "Off"
       caption <- paste0(
         "F2 individuals: ", r$n_ind,
         "  |  Model: ", r$model,
-        "  |  LOD threshold: 3.6 (Bonferroni)",
+        "\nLOD threshold: 3.6 (Bonferroni)",
         "  |  Teaching mode: ", tm
       )
-      png(file, width = 2000, height = 1400, res = 150, bg = BG_PLOT)
+      png(file, width = 2400, height = 1700, res = 150, bg = cl$BG_PLOT)
       gridExtra::grid.arrange(
         p1, p2, ncol = 1,
         bottom = grid::textGrob(caption,
-          gp = grid::gpar(fontsize = 10, col = "#aaaaaa"), hjust = 0.5)
+          gp = grid::gpar(fontsize = 22, col = cl$caption), hjust = 0.5)
       )
       dev.off()
     }
@@ -1241,22 +1342,27 @@ server <- function(input, output, session) {
         for (cs in qtl_snp) { g <- geno[, cs]; pheno <- pheno + (g - mean(g)) * gwas_ef * 0.3 }
       }
 
-      pool_size <- min(200L, floor(n_ind / 3L))
+      # Remove the 200-cap so power actually scales with N (key for the human vs finch contrast)
+      pool_size <- floor(n_ind / 3L)
       ranked    <- order(pheno, decreasing = TRUE)
       case_idx  <- ranked[seq_len(pool_size)]
       ctrl_idx  <- sample(ranked[(pool_size + 1L):n_ind], pool_size)
 
-      pheno_cc            <- rep(0L, n_ind)
-      pheno_cc[case_idx]  <- 1L
-
       setProgress(0.75, detail = "Running association scan")
-      lod <- qtl_scan_gwas(geno, pheno_cc)
+      lod <- qtl_scan_gwas(geno, case_idx, ctrl_idx)
       setProgress(1.0)
+
+      # Visualisation: pick cases/controls from the first n_vis individuals (those stored in block_vis)
+      n_vis      <- pop$n_vis
+      vis_ranked <- order(pheno[seq_len(n_vis)], decreasing = TRUE)
+      vis_pool   <- floor(n_vis / 3L)
+      vis_case   <- vis_ranked[seq_len(vis_pool)]
+      vis_ctrl   <- sample(vis_ranked[seq(vis_pool + 1L, 2L * vis_pool)], vis_pool)
 
       list(lod = lod, positions = pop$positions, qtl_snp = qtl_snp,
            n_snps = n_snps, block_idx = pop$block_idx, n_blocks = nb,
            n_founders = pop$n_founders, block_vis = pop$block_vis,
-           case_idx = case_idx, ctrl_idx = ctrl_idx,
+           case_idx = vis_case, ctrl_idx = vis_ctrl,
            lod_thresh = 4.3, teaching = teach,
            n_ind = n_ind, model = input$gwas_model,
            block_cM = block_cM)
@@ -1264,34 +1370,38 @@ server <- function(input, output, session) {
   })
 
   output$gwas_hap_plot <- renderPlot({
-    req(gwas_results()); make_gwas_hap_plot(gwas_results())
-  }, bg = BG_PLOT)
+    req(gwas_results())
+    make_gwas_hap_plot(gwas_results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   output$gwas_manhattan <- renderPlot({
-    req(gwas_results()); make_gwas_manhattan(gwas_results())
-  }, bg = BG_PLOT_LIGHT)
+    req(gwas_results())
+    make_gwas_manhattan(gwas_results(), light = isTRUE(input$light_mode))
+  }, bg = "white")
 
   # GWAS download handler
   output$download_gwas <- downloadHandler(
     filename = function() paste0("gwas_plot_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".png"),
     content  = function(file) {
       req(gwas_results())
-      r  <- gwas_results()
-      p1 <- make_gwas_hap_plot(r)
-      p2 <- make_gwas_manhattan(r)
+      r     <- gwas_results()
+      light <- isolate(isTRUE(input$light_mode))
+      cl    <- get_colors(light)
+      p1 <- make_gwas_hap_plot(r,  light = light, base_size = 28)
+      p2 <- make_gwas_manhattan(r, light = light, base_size = 28)
       tm <- if (isTRUE(r$teaching)) "On" else "Off"
       caption <- paste0(
         "Individuals: ", r$n_ind,
         "  |  LD block: ", r$block_cM, " cM",
         "  |  Model: ", r$model,
-        "  |  LOD threshold: ", r$lod_thresh,
+        "\nLOD threshold: ", r$lod_thresh,
         "  |  Teaching mode: ", tm
       )
-      png(file, width = 2000, height = 1600, res = 150, bg = BG_PLOT)
+      png(file, width = 2400, height = 1900, res = 150, bg = cl$BG_PLOT)
       gridExtra::grid.arrange(
         p1, p2, ncol = 1,
         bottom = grid::textGrob(caption,
-          gp = grid::gpar(fontsize = 10, col = "#aaaaaa"), hjust = 0.5)
+          gp = grid::gpar(fontsize = 22, col = cl$caption), hjust = 0.5)
       )
       dev.off()
     }
