@@ -27,7 +27,7 @@ shiny::runGitHub("Cross_Examination", "sruckman")
 
 **Student Worksheet** ([docx](Cross_Examination_Student_Worksheet.docx) | [PDF](Cross_Examination_Student_Worksheet.pdf)) — six scenario prompts with workspace for students to record their reasoning and simulator results. Each scenario targets a different mapping design and set of trade-offs.
 
-**[Teaching Demo](teaching_demo.html)** ([docx](Cross_Examination_Teaching_Demo_Drosophila.docx) | [PDF](Cross_Examination_Teaching_Demo_Drosophila.pdf)) — a fully worked example using a *Drosophila* aggression scenario. Covers parameter choice, budget math, and interpretation of results under single-QTL and polygenic architectures. Includes instructor discussion notes.
+**[Teaching Demo](https://sruckman.github.io/Cross_Examination/teaching_demo.html)** ([docx](Cross_Examination_Teaching_Demo_Drosophila.docx) | [PDF](Cross_Examination_Teaching_Demo_Drosophila.pdf)) — a fully worked example using a *Drosophila* aggression scenario. Covers parameter choice, budget math, and interpretation of results under single-QTL and polygenic architectures. Includes instructor discussion notes.
 
 ---
 
