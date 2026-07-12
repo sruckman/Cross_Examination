@@ -89,3 +89,4 @@ Simulates a case-control GWAS in an outbred population using a MAGIC-style mosai
 - **Light and dark mode**: dark background optimized for projector display; light mode available for print and screen use
 - **LD block size control**: GWAS tab lets you vary block size to show how recombination history shapes the association signal
 - **Fixed Bonferroni thresholds**: LOD 3.6 for MPP and Biparental QTL (202 tests, α = 0.05), LOD 4.3 for GWAS (1000 tests, α = 0.05)
+"" 
