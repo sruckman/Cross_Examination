@@ -1,6 +1,9 @@
 # Teaching materials — kept locally, not posted to GitHub
 teaching_materials/
 
+# Manuscript files — kept locally, not posted to GitHub
+manuscript/
+
 # Quarto build outputs
 .quarto/
 _extensions/
