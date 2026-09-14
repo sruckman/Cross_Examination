@@ -31,6 +31,14 @@ shiny::runGitHub("Cross_Examination", "sruckman")
 
 ---
 
+## Technical & Reference Materials
+
+**Technical Specifications** ([docx](Technical%20Specifications%20for%20Cross%20Examination.docx) | [PDF](Technical%20Specifications%20for%20Cross%20Examination.pdf)) — documents the simulation logic behind the app: recombination rate assumptions, population size dynamics, and LOD score calculation, for readers who want the math behind what the app produces.
+
+**Comparison Table** ([docx](Comparison%20Table.docx) | [PDF](Comparison%20Table.pdf)) — a side-by-side reference comparing Biparental Cross, GWAS, and MPP designs across allelic diversity, mapping resolution, experimental control, sample size, founder allele representation, and maintenance burden.
+
+---
+
 ## Using the simulator
 
 Cross Examination has three tabs: **MPP**, **Biparental QTL**, and **GWAS**. Each tab simulates a different study design for mapping the genetic basis of a quantitative trait. The controls on the left set the experimental parameters; the plots on the right show the output after you click Simulate.
